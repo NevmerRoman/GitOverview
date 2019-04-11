@@ -10,13 +10,13 @@ class Container{
         ~Container(){
             delete [] _data;
             _size = 0;
-            cout << "dist\n";
+            cout << "distructor\n";
         }
 
         Container(){
             _data = nullptr;
             _size = 0;
-            cout << "const\n";
+            cout << "constructor\n";
         }
 
         char* data(){
@@ -31,36 +31,82 @@ class Container{
             return _size;
         }
 
-        virtual bool empty() = 0;
-        void clear();
+        virtual bool empty() const = 0;
+        virtual void clear() = 0;
 };
 
-class AbstractContainer : public Container{
-
-};
-
-class map : public AbstractContainer{
-
-};
-
-class set : public AbstractContainer{
-
-};
-
-class NonAbstractContainer : public Container{
+class AssociativeContainer : public Container{
+    protected:
+        unsigned int key;
     public:
-        NonAbstractContainer() : Container(){}
-        void push_back(const char& value);
-        void pop_back();
+        AssociativeContainer() : Container(){}
+
+        virtual void insert() = 0;
+        virtual void erase() = 0;
+        virtual void swap() = 0;
 };
 
-class list : public NonAbstractContainer{
-
-};
-
-class vector : public NonAbstractContainer{
+class map : public AssociativeContainer{
     public:
-        vector() : NonAbstractContainer(){}
+        map() : AssociativeContainer(){cout << "map\n";}
+
+        bool empty() const{return false;}
+
+        void clear(){}
+
+        void insert(){}
+
+        void erase(){}
+
+        void swap(){}
+};
+
+class set : public AssociativeContainer{
+    public:
+        set() : AssociativeContainer(){cout << "set\n";}
+
+        bool empty() const{return false;}
+
+        void clear(){}
+
+        void insert(){}
+
+        void erase(){}
+
+        void swap(){}
+};
+
+class NonAssociativeContainer : public Container{
+    public:
+        NonAssociativeContainer() : Container(){}
+        virtual void push_back(const char& value) = 0;
+        virtual void push_back(char&& value) = 0;
+        virtual void pop_back() = 0;
+};
+
+class list : public NonAssociativeContainer{
+    public:
+        list() : NonAssociativeContainer(){cout << "list\n";}
+        bool empty() const{return false;}
+
+        void clear(){}
+
+        void push_back(const char& value){}
+
+        void push_back(char&& value){}
+
+        void pop_back(){}
+
+        void push_front( const char& value ){}
+
+        void push_front( char&& value ){}
+
+        void pop_front(){}
+};
+
+class vector : public NonAssociativeContainer{
+    public:
+        vector() : NonAssociativeContainer(){cout << "vector\n";}
 
         bool empty() const{
             if (_data == nullptr) return true;
@@ -98,5 +144,8 @@ class vector : public NonAbstractContainer{
 
 int main(){
     vector A;
+    list B;
+    map C;
+    set D;
     return 0;
 }
