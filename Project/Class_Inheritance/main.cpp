@@ -2,10 +2,9 @@
 
 using std::cout;
 
-template <typename T>
 class Container{
     protected:
-        T* _data;
+        char* _data;
         unsigned int _size;
     public:
         ~Container(){
@@ -20,7 +19,7 @@ class Container{
             cout << "const\n";
         }
 
-        T* data(){
+        char* data(){
             return _data;
         }
 
@@ -36,44 +35,37 @@ class Container{
         virtual void clear() = 0;
 };
 
-template <typename T>
-class AbstractContainer : public Container<T>{
+class AbstractContainer : public Container{
 
 };
 
-template <typename T>
-class map : public AbstractContainer<T>{
+class map : public AbstractContainer{
 
 };
 
-template <typename T>
-class set : public AbstractContainer<T>{
+class set : public AbstractContainer{
 
 };
 
-template <typename T>
-class NonAbstractContainer : public Container<T>{
+class NonAbstractContainer : public Container{
     public:
-        NonAbstractContainer() : Container<T>(){}
-        virtual void push_back(const T& value) = 0;
+        NonAbstractContainer() : Container(){}
+        virtual void push_back(const char& value) = 0;
         virtual void pop_back() = 0;
 };
 
-template <typename T>
-class list : public NonAbstractContainer<T>{
+class list : public NonAbstractContainer{
 
 };
 
-template <typename T>
-class vector : public NonAbstractContainer<T>{
+class vector : public NonAbstractContainer{
     public:
-        vector() : NonAbstractContainer<T>(){}
+        vector() : NonAbstractContainer(){}
 
         bool empty() const{
             if (_data == nullptr) return true;
             unsigned int i = 0;
-            T val = T();
-            while(_data[i] == val){
+            while(_data[i] == '\0'){
                 i++;
             }
             if (i >= _size){
@@ -83,29 +75,28 @@ class vector : public NonAbstractContainer<T>{
         }
 
         void clear(){
-            T val = T();
-            for(unsigned int i = 0; i < _size; i++)_data[i] = val;
+            for(unsigned int i = 0; i < _size; i++)_data[i] = '\0';
         }
 
-        void push_back(const T& value){
-            _data = (T*) realloc(_data, ((_size + 1) * sizeof(T)));
+        void push_back(const char& value){
+            _data = (char*) realloc(_data, ((_size + 1) * sizeof(char)));
             _data[_size] = value;
             _size++;
         }
 
-        void push_back(T&& value){
-            _data = (T*) realloc(_data, ((_size) * sizeof(T)));
+        void push_back(char&& value){
+            _data = (char*) realloc(_data, ((_size) * sizeof(char)));
             _data[_size] = value;
             _size++;
         }
 
         void pop_back(){
             _size--;
-            _data = (T*) realloc(_data, (_size * sizeof(T)));
+            _data = (char*) realloc(_data, (_size * sizeof(char)));
         }
 };
 
 int main(){
-    vector<int> A;
+    vector A;
     return 0;
 }
