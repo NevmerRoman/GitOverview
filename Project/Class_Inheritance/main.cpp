@@ -10,7 +10,7 @@ class Container{
         ~Container(){
             delete [] _data;
             _size = 0;
-            cout << "dist";
+            cout << "dist\n";
         }
 
         Container(){
@@ -32,7 +32,7 @@ class Container{
         }
 
         virtual bool empty() = 0;
-        virtual void clear() = 0;
+        void clear();
 };
 
 class AbstractContainer : public Container{
@@ -50,8 +50,8 @@ class set : public AbstractContainer{
 class NonAbstractContainer : public Container{
     public:
         NonAbstractContainer() : Container(){}
-        virtual void push_back(const char& value) = 0;
-        virtual void pop_back() = 0;
+        void push_back(const char& value);
+        void pop_back();
 };
 
 class list : public NonAbstractContainer{
