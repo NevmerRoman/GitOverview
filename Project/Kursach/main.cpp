@@ -17,6 +17,7 @@ template <typename T>
 class RedBlackTree{
 private:
     Node<T> *RBT_root;
+    Node<T> *NIL;
     unsigned int countNodes;
 
     Node<T> *NewNode(T val){
@@ -30,16 +31,10 @@ private:
         return node;
     }
 
-    void DeleteNode(Node<T>* node){
-        countNodes--;
-        delete node;
-    }
-
     void Clear(Node<T>* node){
         if(!node) return;
         if(node->left) Clear(node->left);
         if(node->right) Clear(node->right);
-        countNodes--;
         delete node;
     }
 
@@ -86,7 +81,7 @@ private:
         return Y;
     }
 
-    void BalanceInsert(Node<T>* node){
+    void BalanceInsert(Node<T> *node){
         Node<T> *par = node->parent;
         while((node != RBT_root) && (par->color == Red)){
             int flag = 0;
@@ -114,50 +109,43 @@ private:
         }
     }
 
-    /*bool Remove(Node<T>**root, T value){
-        Node<T> *node = *root;
-        unsigned int mask;
-        if (!node) return false;
-        if(node->value < value) {
-            mask = Remove(&node->right,value);
-            Remove2(mask, node);
+    void BalanceRemove(Node<T> *node, char seid_son){
+        Node<T> *X = node->right;
+        if(!X){
+            X->value = T();
+            X->color = Black;
+            X->parent = node->parent;
+            if(seid_son == 'L') node->parent->left = X;
+            else node->parent->right = X;
         }
-        else if(node->value > value) {
-            mask = Remove(&node->left,value);
-            Remove2(mask, node);
-        }
-        else{               //нашли нужную вершину
-            // если в дереве единственная вершина - корень
-            if (!(node->left || node->right)&&(node==RBT_root)){
-                Clear();
-                return -1;
+
+        Node<T> *par = X->parent;
+        while((X != RBT_root) && (X->color == Black)){
+
+            if(X == par->left){
+
+                if((par->right) && (par->right->color == Red)){
+                    par = RotateLeft(par);
+                    par->color = Black;
+                    par->left->color = Red;
+                }
+                else{
+
+                    }
+
+                }
             }
 
-            //если у вершины нет детей
-            if (!(node->left || node->right)) return 0;
+            else if(X == par->right){
 
-            //если у вершины 1 сын
-            Node<T> *son=nullptr;
-            if ((node->left)&&!(node->right)) son = node->left;
-            if ((node->right)&&!(node->left)) son = node->right;
-            if (son) return 1;
-
-            //если у вершины оба сына
-            if ((son->left)&&(son->right)) return 2;
+                if(par->left->color == Red){
+                    par = RotateRight(par);
+                    par->color = Black;
+                    par->right->color = Red;
+                }
+            }
         }
     }
-
-    bool Remove2(unsigned int mask, Node<T>**root){
-        switch(mask){
-        case 0:
-            return 1;
-        case 1:
-            return 1;
-        case 2:
-            return 1;
-        }
-    }*/
-
 
 public:
     RedBlackTree(){
@@ -182,7 +170,7 @@ public:
     }
 
     bool Find(T value){
-        Node<T> *node=RBT_root;
+        Node<T> *node = RBT_root;
         while(node) {
             if(node->value==value) return true;
             if(node->value>value) node = node->left;
@@ -220,7 +208,74 @@ public:
     }
 
     void Remove(T value){
-        Remove(&RBT_root,value);
+        Node<T> *node = RBT_root;
+        char seid_son = '\0';
+        while(node && node->value != value) {
+            if(node->value > value) node = node->left;
+            if(node->value < value) node = node->right;
+        }
+
+        if (node->value != value){
+            cout << "false value" << endl;
+            return;
+        }
+
+        if(node == node->parent->left) seid_son = 'L';
+        else seid_son = 'R';
+
+        if(!node->left && !node->right){                                   // Если нет детей
+            if(node == RBT_root){
+                delete RBT_root;
+                return;
+            }
+            if(node == node->parent->left) node->parent->left = 0;
+            else node->parent->right = 0;
+        }
+
+        else if(node->left && !node->right){                               // Если есть только левый сын
+            if(node == RBT_root){
+                RBT_root = node->left;
+                RBT_root->parent = 0;
+                RBT_root->color = Black;
+                return;
+            }
+            else if(node == node->parent->left) node->parent->left = node->left;
+            else node->parent->right = node->left;
+            node->left->parent = node->parent;
+        }
+
+        else if(!node->left && node->right){                               // Если есть только правый сын
+            if(node == RBT_root){
+                RBT_root = node->right;
+                RBT_root->parent = 0;
+                RBT_root->color = Black;
+                return;
+            }
+            else if(node == node->parent->left) node->parent->left = node->right;
+            else node->parent->right = node->right;
+            node->right->parent = node->parent;
+        }
+
+        else{                                                              // Если есть оба сына
+            Node<T> *son = node->right;
+            while(son->left) son = son->left;
+            if(!son) son = node->left;
+            node->value = son->value;
+
+            if((son == son->parent->right) && (son->right)){
+                son->right->parent = son->parent;
+                son->parent->right = son->right;
+            }
+            else if(son->right){
+                son->right->parent = son->parent;
+                son->parent->left = son->right;
+            }
+            else if(son == son->parent->right) son->parent->right = 0;
+            else son->parent->left = 0;
+            node = son;
+        }
+
+        if(node->color == Black) BalanceRemove(node, seid);
     }
 
     unsigned int GetNodesCount(){
@@ -250,10 +305,16 @@ void Test_int(){
     cout << "\nFind(1) = " << tree.Find(1) << endl;
     cout << "Find(8) = " << tree.Find(8) << endl;
 
+    cout << "Remove(7)" << endl;
+    tree.Remove(7);
+    cout << "After Remove : " << endl;
+    tree.Show();
+
     cout << "\nAfter Clear : " << endl;
     tree.Clear();
     tree.Show();
 }
+
 void Test_double(){
     RedBlackTree<double> tree;
     tree.Insert(1.0);
@@ -277,6 +338,7 @@ void Test_double(){
     tree.Clear();
     tree.Show();
 }
+
 void Test_char(){
     RedBlackTree<char> tree;
     tree.Insert('a');
@@ -298,6 +360,7 @@ void Test_char(){
     tree.Clear();
     tree.Show();
 }
+
 void Test_string(){
     #include <string>
     //using std::string;
@@ -324,9 +387,9 @@ void Test_string(){
 
 
 int main(){
-    //Test_int();
+    Test_int();
     //Test_double();
     //Test_char();
-    Test_string();
+    //Test_string();
     return 0;
 }
