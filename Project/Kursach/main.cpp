@@ -15,6 +15,142 @@ struct Node{
 
 template <typename T>
 class RedBlackTree{
+public:
+    RedBlackTree(){
+        RBT_root = 0;
+        countNodes = 0;
+    }
+
+    ~RedBlackTree(){
+        Clear(RBT_root);
+    }
+
+    void Clear(){
+        Clear(RBT_root);
+        countNodes = 0;
+        RBT_root = 0;
+    }
+
+    void Show()
+    {
+        printf("[tree]\n");
+        Show(RBT_root,0,'*');
+    }
+
+    bool Find(T value){
+        Node<T> *node = RBT_root;
+        while(node) {
+            if(node->value==value) return true;
+            if(node->value>value) node = node->left;
+            else node = node->right;
+        }
+        return false;
+    }
+
+    void Insert(T value){
+        if(!RBT_root) RBT_root = NewNode(value);
+        else{
+            Node<T> *node = RBT_root;
+            Node<T> *par = NewNode(T());
+            countNodes--;
+            char flag = '\0';
+            while(node){
+                par = node;
+                if(value < node->value){
+                    node = node->left;
+                    flag = 'L';
+                }
+                else if(value > node->value){
+                    node = node->right;
+                    flag = 'R';
+                }
+                else return;
+            }
+            node = NewNode(value);
+            node->parent = par;
+            if(flag == 'L') par->left = node;
+            else par->right = node;
+            if(par->color == Red) BalanceInsert(node);
+        }
+        RBT_root->color = Black;
+    }
+
+    void Remove(T value){
+        Node<T> *node = RBT_root;
+        char seid_son = '\0';
+        while(node && node->value != value) {
+            if(node->value > value) node = node->left;
+            if(node->value < value) node = node->right;
+        }
+
+        if (node->value != value){
+            cout << "false value" << endl;
+            return;
+        }
+
+        if(node == node->parent->left) seid_son = 'L';                     // Определяем каким сыном является найденная вершина
+        else seid_son = 'R';
+
+        if(!node->left && !node->right){                                   // Если нет детей
+            if(node == RBT_root){
+                delete RBT_root;
+                delete node;
+                return;
+            }
+            if(node == node->parent->left) node->parent->left = 0;
+            else node->parent->right = 0;
+        }
+        else if(node->left && !node->right){                               // Если есть только левый сын
+                if(node == RBT_root){
+                    RBT_root = node->left;
+                    RBT_root->parent = 0;
+                    RBT_root->color = Black;
+                    delete node;
+                    return;
+                }
+                else if(seid_son == 'L') node->parent->left = node->left;
+                     else node->parent->right = node->left;
+                node->left->parent = node->parent;
+             }
+             else if(!node->left && node->right){                               // Если есть только правый сын
+                     if(node == RBT_root){
+                        RBT_root = node->right;
+                        RBT_root->parent = 0;
+                        RBT_root->color = Black;
+                        delete node;
+                        return;
+                     }
+                     else if(seid_son == 'L') node->parent->left = node->right;
+                          else node->parent->right = node->right;
+                     node->right->parent = node->parent;
+                  }
+                  else{                                                              // Если есть оба сына
+                     Node<T> *son = node->right;
+                     while(son->left) son = son->left;
+                     if(!son) son = node->left;
+                     node->value = son->value;
+                     if(son->right){
+                        if(son == son->parent->right){
+                            son->right->parent = son->parent;
+                            son->parent->right = son->right;
+                        }
+                        else{
+                            son->right->parent = son->parent;
+                            son->parent->left = son->right;
+                        }
+                     }
+                     else if(son == son->parent->right) son->parent->right = 0;
+                          else son->parent->left = 0;
+                     node = son;
+                  }
+        if(node->color == Black) BalanceRemove(node);
+        delete node;
+    }
+
+    unsigned int GetNodesCount(){
+        return countNodes;
+    }
+
 private:
     Node<T> *RBT_root;
     Node<T> *NIL;
@@ -109,177 +245,77 @@ private:
         }
     }
 
-    void BalanceRemove(Node<T> *node, char seid_son){
-        Node<T> *X = node->right;
-        if(!X){
+    void BalanceRemove(Node<T> *node){
+        Node<T> *X = node;
+        if(!node->right){
             X->value = T();
             X->color = Black;
-            X->parent = node->parent;
-            if(seid_son == 'L') node->parent->left = X;
-            else node->parent->right = X;
         }
+        else X = node->right;
 
         Node<T> *par = X->parent;
         while((X != RBT_root) && (X->color == Black)){
-
             if(X == par->left){
-
                 if((par->right) && (par->right->color == Red)){
                     par = RotateLeft(par);
                     par->color = Black;
                     par->left->color = Red;
                 }
                 else{
-
+                    if((!par->right->right && !par->right->left) ||
+                       (!par->right->right && (par->right->left->color == Black)) ||
+                       (!par->right->left && (par->right->right->color == Black)) ||
+                       ((par->right->left->color == Black) && (par->right->right->color == Black)))
+                    {
+                        par->right->color = Red;
+                        X = par;
+                        par = X->parent;
                     }
-
+                    else if(!par->right->right || (par->right->right->color == Black)){
+                            par->right->color = Red;
+                            par->color = Black;
+                            par = RotateLeft(par);
+                         }
+                         else{
+                            par->right->color = par->color;
+                            par->color = Black;
+                            par->right->right->color = Black;
+                            par = RotateLeft(par);
+                            return;
+                         }
                 }
             }
-
-            else if(X == par->right){
-
-                if(par->left->color == Red){
-                    par = RotateRight(par);
+            else{
+                if((par->left) && (par->left->color == Red)){
+                    par = RotateLeft(par);
                     par->color = Black;
                     par->right->color = Red;
                 }
-            }
-        }
-    }
-
-public:
-    RedBlackTree(){
-        RBT_root = 0;
-        countNodes = 0;
-    }
-
-    ~RedBlackTree(){
-        Clear(RBT_root);
-    }
-
-    void Clear(){
-        Clear(RBT_root);
-        countNodes = 0;
-        RBT_root = 0;
-    }
-
-    void Show()
-    {
-        printf("[tree]\n");
-        Show(RBT_root,0,'*');
-    }
-
-    bool Find(T value){
-        Node<T> *node = RBT_root;
-        while(node) {
-            if(node->value==value) return true;
-            if(node->value>value) node = node->left;
-            else node = node->right;
-        }
-        return false;
-    }
-
-    void Insert(T value){
-        if(!RBT_root) RBT_root = NewNode(value);
-        else{
-            Node<T> *node = RBT_root;
-            Node<T> *par = NewNode(T());
-            countNodes--;
-            char flag = '\0';
-            while(node){
-                par = node;
-                if(value < node->value){
-                    node = node->left;
-                    flag = 'L';
+                else{
+                    if((!par->left->right && !par->left->left) ||
+                       (!par->left->right && (par->left->left->color == Black)) ||
+                       (!par->left->left && (par->left->right->color == Black)) ||
+                       ((par->left->left->color == Black) && (par->left->right->color == Black)))
+                    {
+                        par->left->color = Red;
+                        X = par;
+                        par = X->parent;
+                    }
+                    else if(!par->left->left || (par->left->left->color == Black)){
+                            par->left->color = Red;
+                            par->color = Black;
+                            par = RotateRight(par);
+                         }
+                         else{
+                            par->left->color = par->color;
+                            par->color = Black;
+                            par->left->left->color = Black;
+                            par = RotateRight(par);
+                            return;
+                         }
                 }
-                else if(value > node->value){
-                    node = node->right;
-                    flag = 'R';
-                }
-                else return;
             }
-            node = NewNode(value);
-            node->parent = par;
-            if(flag == 'L') par->left = node;
-            else par->right = node;
-            if(par->color == Red) BalanceInsert(node);
         }
-        RBT_root->color = Black;
-    }
-
-    void Remove(T value){
-        Node<T> *node = RBT_root;
-        char seid_son = '\0';
-        while(node && node->value != value) {
-            if(node->value > value) node = node->left;
-            if(node->value < value) node = node->right;
-        }
-
-        if (node->value != value){
-            cout << "false value" << endl;
-            return;
-        }
-
-        if(node == node->parent->left) seid_son = 'L';
-        else seid_son = 'R';
-
-        if(!node->left && !node->right){                                   // Если нет детей
-            if(node == RBT_root){
-                delete RBT_root;
-                return;
-            }
-            if(node == node->parent->left) node->parent->left = 0;
-            else node->parent->right = 0;
-        }
-
-        else if(node->left && !node->right){                               // Если есть только левый сын
-            if(node == RBT_root){
-                RBT_root = node->left;
-                RBT_root->parent = 0;
-                RBT_root->color = Black;
-                return;
-            }
-            else if(node == node->parent->left) node->parent->left = node->left;
-            else node->parent->right = node->left;
-            node->left->parent = node->parent;
-        }
-
-        else if(!node->left && node->right){                               // Если есть только правый сын
-            if(node == RBT_root){
-                RBT_root = node->right;
-                RBT_root->parent = 0;
-                RBT_root->color = Black;
-                return;
-            }
-            else if(node == node->parent->left) node->parent->left = node->right;
-            else node->parent->right = node->right;
-            node->right->parent = node->parent;
-        }
-
-        else{                                                              // Если есть оба сына
-            Node<T> *son = node->right;
-            while(son->left) son = son->left;
-            if(!son) son = node->left;
-            node->value = son->value;
-
-            if((son == son->parent->right) && (son->right)){
-                son->right->parent = son->parent;
-                son->parent->right = son->right;
-            }
-            else if(son->right){
-                son->right->parent = son->parent;
-                son->parent->left = son->right;
-            }
-            else if(son == son->parent->right) son->parent->right = 0;
-            else son->parent->left = 0;
-            node = son;
-        }
-
-        if(node->color == Black) BalanceRemove(node, seid);
-    }
-
-    unsigned int GetNodesCount(){
-        return countNodes;
     }
 };
 
