@@ -11,6 +11,25 @@ struct Node{
     Node *parent;
     T value;
     colorsNode color;
+    Node<T>() :
+        left(0),
+        right(0),
+        parent(0),
+        value(T()),
+        color(Black){}
+    /*Node<T>(const Node<T> &other) :
+        left(other.left),
+        right(other.right),
+        parent(other.parent),
+        value(other.value),
+        color(other.color){}
+    Node<T> operator = (const Node<T> &other) {
+        left = (other.left);
+        right = (other.right);
+        parent = (other.parent);
+        value = (other.value);
+        color = (other.color);
+    }*/
 };
 
 template <typename T>
@@ -38,7 +57,7 @@ public:
     }
 
     bool Find(T value){
-        Node<T> *node = RBT_root;
+        Node<T> *node=RBT_root;
         while(node) {
             if(node->value==value) return true;
             if(node->value>value) node = node->left;
@@ -51,8 +70,7 @@ public:
         if(!RBT_root) RBT_root = NewNode(value);
         else{
             Node<T> *node = RBT_root;
-            Node<T> *par = NewNode(T());
-            countNodes--;
+            Node<T> *par = node;
             char flag = '\0';
             while(node){
                 par = node;
@@ -76,84 +94,94 @@ public:
     }
 
     void Remove(T value){
+
         Node<T> *node = RBT_root;
-        char seid_son = '\0';
-        while(node && node->value != value) {
+        // Поиск вершины для удаления
+        while(node->value != value) {
             if(node->value > value) node = node->left;
-            if(node->value < value) node = node->right;
+            else if(node->value < value) node = node->right;
+            if (!node) return;
         }
 
-        if (node->value != value){
-            cout << "false value" << endl;
-            return;
-        }
-
-        if(node == node->parent->left) seid_son = 'L';                     // Определяем каким сыном является найденная вершина
-        else seid_son = 'R';
-
-        if(!node->left && !node->right){                                   // Если нет детей
+        // СЛУЧАЙ 1
+        // Если нет детей
+        if(!node->left && !node->right){
             if(node == RBT_root){
-                delete RBT_root;
-                delete node;
+                Clear();
                 return;
             }
             if(node == node->parent->left) node->parent->left = 0;
             else node->parent->right = 0;
         }
-        else if(node->left && !node->right){                               // Если есть только левый сын
-                if(node == RBT_root){
-                    RBT_root = node->left;
-                    RBT_root->parent = 0;
-                    RBT_root->color = Black;
-                    delete node;
-                    return;
-                }
-                else if(seid_son == 'L') node->parent->left = node->left;
-                     else node->parent->right = node->left;
+
+        // СЛУЧАЙ 2
+        // Если есть только один сын
+        else if(node->left && !node->right){
+            if(node == RBT_root){
+                RBT_root = node->left;
+                RBT_root->parent = 0;
+                RBT_root->color = Black;
+                countNodes--;
+                delete node;
+                return;
+            }
+            else if(node == node->parent->left) {
+                node->parent->left = node->left;
                 node->left->parent = node->parent;
-             }
-             else if(!node->left && node->right){                               // Если есть только правый сын
-                     if(node == RBT_root){
-                        RBT_root = node->right;
-                        RBT_root->parent = 0;
-                        RBT_root->color = Black;
-                        delete node;
-                        return;
-                     }
-                     else if(seid_son == 'L') node->parent->left = node->right;
-                          else node->parent->right = node->right;
-                     node->right->parent = node->parent;
-                  }
-                  else{                                                              // Если есть оба сына
-                     Node<T> *son = node->right;
-                     while(son->left) son = son->left;
-                     if(!son) son = node->left;
-                     node->value = son->value;
-                     if(son->right){
-                        if(son == son->parent->right){
-                            son->right->parent = son->parent;
-                            son->parent->right = son->right;
-                        }
-                        else{
-                            son->right->parent = son->parent;
-                            son->parent->left = son->right;
-                        }
-                     }
-                     else if(son == son->parent->right) son->parent->right = 0;
-                          else son->parent->left = 0;
-                     node = son;
-                  }
+            }
+            else {
+                node->parent->right = node->left;
+                node->left->parent = node->parent;
+            }
+            //node->left->color=node->color;
+        }
+        else if(!node->left && node->right){
+            if(node == RBT_root){
+                RBT_root = node->right;
+                RBT_root->parent = 0;
+                RBT_root->color = Black;
+                countNodes--;
+                delete node;        //если указатели, то неправильно
+                return;
+            }
+            else if(node == node->parent->left) {
+                node->parent->left = node->right;
+                node->right->parent = node->parent;
+            }
+            else {
+                node->parent->right = node->right;
+                node->right->parent = node->parent;
+            }
+            //node->right->color=node->color;
+        }
+
+        // СЛУЧАЙ 3
+        // Если есть оба сына
+        else{
+            // Находим значение, которое заменит удаляемое
+            Node<T> *sur = node->right;
+            while(sur->left) sur = sur->left;
+            node->value = sur->value;
+            if(sur->right){
+                sur->right->parent = sur->parent;
+                if(sur == sur->parent->right)  sur->parent->right = sur->right;
+                else if(sur == sur->parent->left) sur->parent->left = sur->right;
+            }
+            else if(sur == sur->parent->right) sur->parent->right = 0;
+            else if(sur == sur->parent->left) sur->parent->left = 0;
+            node = sur;
+        }
         if(node->color == Black) BalanceRemove(node);
         delete node;
+        countNodes--;
+        return;
     }
 
     unsigned int GetNodesCount(){
         return countNodes;
     }
-
 private:
     Node<T> *RBT_root;
-    Node<T> *NIL;
     unsigned int countNodes;
 
     Node<T> *NewNode(T val){
@@ -167,10 +195,16 @@ private:
         return node;
     }
 
+    void DeleteNode(Node<T>* node){
+        countNodes--;
+        delete node;
+    }
+
     void Clear(Node<T>* node){
         if(!node) return;
         if(node->left) Clear(node->left);
         if(node->right) Clear(node->right);
+        countNodes--;
         delete node;
     }
 
@@ -187,6 +221,12 @@ private:
         Show(node->right, high + 2, '+');
     }
 
+    /*      X                Y
+           / \              / \
+          a   Y     -->    X   c
+             / \          / \
+            b   c        a   b      */
+
     Node<T> *RotateLeft(Node<T> *X){
         Node<T> *Y = X->right;
         X->right = Y->left;
@@ -201,6 +241,12 @@ private:
         if(X == RBT_root) RBT_root = Y;
         return Y;
     }
+
+    /*      X                Y
+           / \              / \
+          Y  a       -->   b   X
+         / \                  / \
+        b   c                c   a      */
 
     Node<T> *RotateRight(Node<T> *X){
         Node<T> *Y = X->left;
@@ -217,7 +263,7 @@ private:
         return Y;
     }
 
-    void BalanceInsert(Node<T> *node){
+    void BalanceInsert(Node<T>* node){
         Node<T> *par = node->parent;
         while((node != RBT_root) && (par->color == Red)){
             int flag = 0;
@@ -246,94 +292,139 @@ private:
     }
 
     void BalanceRemove(Node<T> *node){
+
+        // X-ребенок удаленной вершины
         Node<T> *X = node;
         if(!node->right){
-            X->value = T();
-            X->color = Black;
+            if(node->left) X = node->left;
+            else{
+                X->value = T();
+                X->color = Black;
+            }
         }
         else X = node->right;
-
         Node<T> *par = X->parent;
+
+        // Выполняем, пока Х - не корень и Х - черная
         while((X != RBT_root) && (X->color == Black)){
-            if(X == par->left){
+
+            // ЕСЛИ Х - Л.Е.В.Ы.Й СЫН
+            if((X == par->left)||(par->left==0 && X->value==T())){
+                // Если у Х есть красный брат
                 if((par->right) && (par->right->color == Red)){
-                    par = RotateLeft(par);
-                    par->color = Black;
-                    par->left->color = Red;
+                    par->color = Red;
+                    par->right->color = Black;
+                    RotateLeft(par);
                 }
-                else{
+                else {
+                    // Если у брата черные дети
+                    // Мы не используем NIL-узлы, поэтому много условий
                     if((!par->right->right && !par->right->left) ||
-                       (!par->right->right && (par->right->left->color == Black)) ||
-                       (!par->right->left && (par->right->right->color == Black)) ||
-                       ((par->right->left->color == Black) && (par->right->right->color == Black)))
+                            (!par->right->right && (par->right->left->color == Black)) ||
+                            (!par->right->left && (par->right->right->color == Black)) ||
+                            ((par->right->left) && (par->right->right) &&
+                             (par->right->left->color == Black) &&
+                             (par->right->right->color == Black)))
                     {
                         par->right->color = Red;
                         X = par;
                         par = X->parent;
                     }
-                    else if(!par->right->right || (par->right->right->color == Black)){
+                    // Если у брата одинаковый ребенок - черный
+                    else if(par->right->right && (par->right->right->color == Black)){
+                        par->right->color = Red;
+                        if (par->right->left) par->right->left->color = Black;
+                        //par->color = Black;
+                        RotateRight(par->right);
+                    }
+                    // В других случаях
+                    else{
+                        if ((par->right->left && par->right->left->color && !par->right->right)||
+                            (par->right->left && par->right->left->color && !par->right->right->color)) {
+                            par->right->left->color = Black;
                             par->right->color = Red;
-                            par->color = Black;
-                            par = RotateLeft(par);
-                         }
-                         else{
-                            par->right->color = par->color;
-                            par->color = Black;
-                            par->right->right->color = Black;
-                            par = RotateLeft(par);
-                            return;
-                         }
+                            RotateRight(par->right);
+                        }
+                        par->right->color = par->color;
+                        par->color = Black;
+                        if (par->right->right) par->right->right->color = Black;
+
+                        RotateLeft(par);
+                        return;
+                    }
                 }
             }
-            else{
+
+            // ЕСЛИ Х - П.Р.А.В.Ы.Й СЫН
+            else if((X == par->right)||(par->right==0 && X->value==T())){
+                // Если у Х есть красный брат
                 if((par->left) && (par->left->color == Red)){
-                    par = RotateLeft(par);
-                    par->color = Black;
-                    par->right->color = Red;
+                    par->color = Red;
+                    par->left->color = Black;
+                    RotateRight(par); //!
                 }
                 else{
+                    // Если у брата черные дети
+                    // Мы не используем NIL-узлы, поэтому много условий
                     if((!par->left->right && !par->left->left) ||
-                       (!par->left->right && (par->left->left->color == Black)) ||
-                       (!par->left->left && (par->left->right->color == Black)) ||
-                       ((par->left->left->color == Black) && (par->left->right->color == Black)))
+                            (!par->left->right && !par->left->left->color) ||
+                            (!par->left->left && !par->left->right->color) ||
+                            ((par->left->left) && (par->left->right) &&
+                             !par->left->left->color &&
+                             !par->left->right->color))
                     {
                         par->left->color = Red;
                         X = par;
                         par = X->parent;
                     }
-                    else if(!par->left->left || (par->left->left->color == Black)){
+                    // Если у брата одинаковый ребенок - черный
+                    else if(par->left->left && !par->left->left->color){
+                        par->left->color = Red;
+                        //par->color = Black;
+                        RotateLeft(par->left);
+                    }
+                    // В других случаях
+                    else{
+                        if ((par->left->left && !par->left->left->color && par->left->right->color)||
+                            (!par->left->left && par->left->right->color)) {
+                            par->left->right->color = Black;
                             par->left->color = Red;
-                            par->color = Black;
-                            par = RotateRight(par);
-                         }
-                         else{
-                            par->left->color = par->color;
-                            par->color = Black;
-                            par->left->left->color = Black;
-                            par = RotateRight(par);
-                            return;
-                         }
+                            RotateLeft(par->left);
+                        }
+                        par->left->color = par->color;
+                        par->color = Black;
+                        if (par->left->left) par->left->left->color = Black;
+
+                        RotateRight(par);
+                        return;
+                    }
                 }
             }
         }
+        if((X!=RBT_root) && (X->color ==Red))
+            X->color=Black;
     }
+
 };
 
 void Test_int(){
     RedBlackTree<int> tree;
-    tree.Insert(5);
+    //tree.Insert(5);
     tree.Insert(7);
-    tree.Insert(1);
+    tree.Insert(-1);
     tree.Insert(2);
     tree.Insert(28);
-    tree.Insert(-6);
+    tree.Insert(0);
     tree.Insert(10);
     tree.Insert(5);
     tree.Insert(-4);
     tree.Insert(15);
     tree.Insert(3);
-    tree.Insert(4);
+    //tree.Insert(4);
     tree.Insert(17);
+    tree.Insert(8);
+    tree.Insert(9);
+    tree.Insert(6);
     cout << endl;
     tree.Show();
 
@@ -341,16 +432,44 @@ void Test_int(){
     cout << "\nFind(1) = " << tree.Find(1) << endl;
     cout << "Find(8) = " << tree.Find(8) << endl;
 
-    cout << "Remove(7)" << endl;
-    tree.Remove(7);
-    cout << "After Remove : " << endl;
+    cout << "\nAfter Remove(3) : " << endl;
+    tree.Remove(3);
     tree.Show();
-
+    cout << "\nAfter Remove(-4) : " << endl;
+    tree.Remove(-4);
+    tree.Show();
+    cout << "\nAfter Remove(-1) : " << endl;
+    tree.Remove(-1);
+    tree.Show();
+    cout << "\nAfter Remove(2) : " << endl;
+    tree.Remove(2);
+    tree.Show();
+    cout << "\nAfter Remove(8) : " << endl;
+    tree.Remove(8);
+    tree.Show();
+    cout << "\nCount of Nodes = " << tree.GetNodesCount() << endl;
+    cout << "\nAfter Remove(17) : " << endl;
+    tree.Remove(17);
+    tree.Show();
+    cout << "\nAfter Remove(10) : " << endl;
+    tree.Remove(10);
+    tree.Show();
+    cout << "\nAfter Remove(15) : " << endl;
+    tree.Remove(15);
+    tree.Show();
+    cout << "\nAfter Remove(28) : " << endl;
+    tree.Remove(28);
+    tree.Show();
+    cout << "\nAfter Remove(0) : " << endl;
+    tree.Remove(0);
+    tree.Show();
+    cout << "\nAfter Remove(7) : " << endl;
+    tree.Remove(9);
+    tree.Show();
     cout << "\nAfter Clear : " << endl;
     tree.Clear();
     tree.Show();
 }
-
 void Test_double(){
     RedBlackTree<double> tree;
     tree.Insert(1.0);
@@ -370,11 +489,13 @@ void Test_double(){
     cout << "\nCount of Nodes = " << tree.GetNodesCount() << endl;
     cout << "\nFind(1.1) = " << tree.Find(1.1) << endl;
     cout << "Find(6.66) = " << tree.Find(6.66) << endl;
+    cout << "\nAfter Remove(5.8) : " << endl;
+    tree.Remove(5.8);
+    tree.Show();
     cout << "\nAfter Clear : " << endl;
     tree.Clear();
     tree.Show();
 }
-
 void Test_char(){
     RedBlackTree<char> tree;
     tree.Insert('a');
@@ -391,12 +512,14 @@ void Test_char(){
     tree.Show();
     cout << "\nCount of Nodes = " << tree.GetNodesCount() << endl;
     cout << "\nFind('i') = " << tree.Find('i') << endl;
+    cout << "\nAfter Remove('e') : " << endl;
+    tree.Remove('e');
+    tree.Show();
     cout << "Find('t') = " << tree.Find('t') << endl;
     cout << "\nAfter Clear : " << endl;
     tree.Clear();
     tree.Show();
 }
-
 void Test_string(){
     #include <string>
     //using std::string;
@@ -416,6 +539,9 @@ void Test_string(){
     cout << "\nCount of Nodes = " << tree.GetNodesCount() << endl;
     cout << "\nFind(\"Svetlana\") = " << tree.Find("Svetlana") << endl;
     cout << "Find(\"Uliana\") = " << tree.Find("Uliana") << endl;
+    cout << "\nAfter Remove(\"Olga\"): " << endl;
+    tree.Remove("Olga");
+    tree.Show();
     cout << "\nAfter Clear : " << endl;
     tree.Clear();
     tree.Show();
@@ -429,3 +555,4 @@ int main(){
     //Test_string();
     return 0;
 }
+
